@@ -1,3 +1,4 @@
+#pragma once
 #include "debug.hpp"
 
 #include <sys/epoll.h>
@@ -6,6 +7,7 @@
 #include <unistd.h>
 #include <string>
 #include <cstring>
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

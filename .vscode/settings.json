@@ -67,6 +67,7 @@
         "socket": "cpp",
         "timer": "cpp",
         "future": "cpp",
-        "mutex": "cpp"
+        "mutex": "cpp",
+        "optional": "cpp"
     }
 }

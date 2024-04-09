@@ -74,7 +74,7 @@ int reactor::delete_event(myevent *ev) {
 
     int ret = epoll_ctl(ev->r->epfd,EPOLL_CTL_DEL,ev->fd,nullptr);
     checkerror(ret);
-
+    
     return 0; 
 }
 
