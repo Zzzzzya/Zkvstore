@@ -30,7 +30,8 @@ namespace zkv {
             ev->in = ev->in.erase(0,pos+1);
 
 
-            ev->out.append(Dealer().deal(result));
+            ev->out.append(ev->db->deal(result)+"\n");
+            
             ev->r->motif_event(ev,EPOLLOUT);
         }
         return;
@@ -48,7 +49,7 @@ namespace zkv {
         char str[1024];
         debug(),"connect from ",inet_ntop(AF_INET, &addr.sin_addr, str, sizeof(str)),"port ",ntohs(addr.sin_port);
 
-        auto ev = e->r->new_event(clientfd,read_callback_kv,send_callback_kv,nullptr);
+        auto ev = e->r->new_event(clientfd,read_callback_kv,send_callback_kv,nullptr,e->db);
 
         e->r->add_event(ev,EPOLLIN);
         zkv::setNonblock(clientfd);

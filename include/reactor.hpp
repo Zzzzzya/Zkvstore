@@ -23,6 +23,7 @@
 
 namespace zkv{
     //两大核心类 事件封装和reactor封装
+    struct kvstore;
     struct myevent;
     struct reactor;
 
@@ -41,6 +42,9 @@ namespace zkv{
         //读写缓冲
         std::string in;
         std::string out;
+
+        kvstore* db;
+        
 
         int inRemain(){return 1024-in.length();}
         int outRemain(){return 1024-out.length();}
@@ -71,7 +75,8 @@ namespace zkv{
         myevent* new_event(int fd,
         event_callback_fd rd,
         event_callback_fd wr,
-        error_callback_fd er);
+        error_callback_fd er,
+        kvstore* db = nullptr);
 
         void destroy_event(myevent* ptr);
 
@@ -79,7 +84,7 @@ namespace zkv{
         int delete_event(myevent* ev);
         int motif_event(myevent* ev,int mask);
 
-        void create_server(short port,event_callback_fd listen_callback,bool run);
+        void create_server(short port,event_callback_fd listen_callback,bool run,kvstore* kv);
 
         void stop();
 

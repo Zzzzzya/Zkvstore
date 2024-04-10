@@ -26,7 +26,8 @@ void reactor::destroy_reactor() {
 myevent* reactor::new_event(int fd,
  event_callback_fd rd, 
  event_callback_fd wr,
- error_callback_fd er) 
+ error_callback_fd er,
+ kvstore* db) 
  {
     assert(!rd || !wr || !er);
 
@@ -44,6 +45,7 @@ myevent* reactor::new_event(int fd,
     ev->rd = rd;
     ev->wr = wr;
     ev->err = er;
+    ev->db = db;
 
     return ev;
 }
@@ -118,7 +120,7 @@ void reactor::run() {
     return ;
 }
 
-void reactor::create_server(short port, event_callback_fd listen_callback,bool ifrun) {
+void reactor::create_server(short port, event_callback_fd listen_callback,bool ifrun,kvstore* kv) {
     //首先绑定套接字
     assert(listen_callback != nullptr);
 
@@ -137,7 +139,7 @@ void reactor::create_server(short port, event_callback_fd listen_callback,bool i
 
     checkerror(listen(listenfd,LISTEN_NUM));
 
-    auto ev = new_event(listenfd,listen_callback,nullptr,nullptr);
+    auto ev = new_event(listenfd,listen_callback,nullptr,nullptr,kv);
 
     add_event(ev,EPOLLIN);
     debug(),"listen port :",port;
@@ -241,7 +243,7 @@ void listen_callback_default(int fd,int events,void* pri){
     char str[1024];
     debug(),"connect from ",inet_ntop(AF_INET, &addr.sin_addr, str, sizeof(str)),"port ",ntohs(addr.sin_port);
 
-    auto ev = e->r->new_event(clientfd,read_callback_default,nullptr,nullptr);
+    auto ev = e->r->new_event(clientfd,read_callback_default,nullptr,nullptr,nullptr);
 
     e->r->add_event(ev,EPOLLIN);
     zkv::setNonblock(clientfd);
