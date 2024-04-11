@@ -101,6 +101,10 @@ namespace zkv{
         int size(){return node_num;}
 
         void kvInOrder(std::vector<Type>& res,int begin,int end);
+        void kvInOrder(Type::member_type member);
+        int getrank(){
+            return rank;
+        }
        
         
         std::pair<bool,typename Type::score_type> checkmember(Type::member_type);
@@ -119,9 +123,11 @@ namespace zkv{
         void destroy(rbnode<Type>* root);//销毁红黑树
         
         int InOrderNow = 0;
+        int rank = -1;
         void InOrderHelper(rbnode<Type>* root,std::vector<Type>& res,int begin,int end);
         
-
+        
+        void InOrderHelper(rbnode<Type>* root,Type::member_type member);
         
     };
 
@@ -695,7 +701,6 @@ namespace zkv{
         assert(res.empty());
         InOrderNow = 0;
         InOrderHelper(root,res,begin,end);
-        InOrderNow = 0;
         return;
     }
 
@@ -710,6 +715,27 @@ namespace zkv{
         InOrderNow++;
 
         if(root->right != Nil)InOrderHelper(root->right,res,begin,end);
+    }
+
+    template <typename Type>
+    void rbtree<Type>::kvInOrder(Type::member_type member){
+        InOrderNow = 0;
+        rank = -1;
+        InOrderHelper(root,member);
+        return;
+    }
+
+    template <typename Type>
+    void rbtree<Type>::InOrderHelper(rbnode<Type>* root,Type::member_type member){
+        if(root->left !=  Nil)InOrderHelper(root->left,member);
+        
+        if(root->data.member == member){
+            rank = InOrderNow;
+            return;
+        }
+        InOrderNow++;
+
+        if(root->right != Nil)InOrderHelper(root->right,member);
     }
 }
 

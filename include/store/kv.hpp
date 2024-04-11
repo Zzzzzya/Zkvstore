@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <store/kvrbtree.hpp>
+#include <store/kvhash.hpp>
 
 /*
     key - value 的存储结构
@@ -21,14 +22,14 @@ namespace zkv{
     struct cmdset{
         std::vector<std::string> cmdset = {
             "SET", "GET", "DEL", "INC","DEC",
-            "RSET", "RGET", "RDEL", "RINC", "RDEC",
-            "HSET", "HGET", "HDEL", "HMOD", "HCOUNT"
+            "RSET", "RGET", "RDEL", "RINC", "RDEC","RINCBY","RDECBY","RSCORE","RANK",
+            "HSET", "HGET", "HDEL", "HGETALL"
         };
 
         std::vector<std::string> cmdsetlow = {
             "set", "get", "del", "inc","dec",
-            "rset", "rget", "rdel", "rinc", "rdec",
-            "hset", "hget", "hdel", "hmod", "hcount"
+            "rset", "rget", "rdel", "rinc", "rdec","rincby","rdecby","rscore","rank",
+            "hset", "hget", "hdel", "hgetall"
         };
 
         int find(std::string input){
@@ -90,7 +91,16 @@ namespace zkv{
                         const std::string& end = "-1");
         std::string rinc(const std::string& key,const std::string& member);
         std::string rdec(const std::string& key,const std::string& member);
-        
-        int mymurmurHashString(const std::string& str);
+        std::string rincby(const std::string& key,const std::string& member,const std::string& value);
+        std::string rdecby(const std::string& key,const std::string& member,const std::string& value);
+        std::string rscore(const std::string& key,const std::string& member);
+        std::string rank(const std::string& key,const std::string& member,int ifback);
+
+        std::string hset(const std::vector<std::string>& tokens);
+        std::string hget(const std::vector<std::string>& tokens);
+        std::string hdel(const std::string& key,const std::string& field);
+        std::string hgetall(const std::string& key);
+
+        int HashString(const std::string& str);
     };    
 }

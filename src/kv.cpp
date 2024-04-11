@@ -92,6 +92,53 @@ namespace zkv{
                 : std::string("ERROR: CMD NUM ERROR!");
                 break;
 
+            case 10: //"RINCBY KEY MEMBER NUM"
+                res = (num == 4)?
+                rincby(toks[1],toks[2],toks[3])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 11: //"RDECBY KEY MEMBER NUM"
+                res = (num == 4)?
+                rdecby(toks[1],toks[2],toks[3])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 12: //"RSCORE KEY MEMBER"
+                res = (num == 3)?
+                rscore(toks[1],toks[2])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 13: //"RANK KEY MEMBER [ifback]"
+                res = (num == 3 || num == 4)?
+                rank(toks[1],toks[2],((num==4)?std::stoi(toks[3]):0))
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 14: //"HSET KEY FIELD VALUE [[FIELD VALUE]...]"
+                res = ((num % 2 == 0) && (num >= 4))?
+                hset(toks)
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 15: //"HGET KEY FIELD [FIELD...]"
+                res = (num>=3)?
+                hget(toks)
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 16: //"HDEL KEY FIELD"
+                res = (num == 3)?
+                hdel(toks[1],toks[2])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 17: //"HGETALL KEY"
+                res = (num == 2)?
+                hgetall(toks[1])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
 
             default:
                 res = "OK";
@@ -198,7 +245,7 @@ namespace zkv{
         return;
     }
 
-    int kvstore::mymurmurHashString(const std::string &kstr)
+    int kvstore::HashString(const std::string &kstr)
     {
         long long sum = 0;
         for(auto t: kstr){
@@ -210,7 +257,7 @@ namespace zkv{
 
     std::pair<kvnode *, kvnode *> kvstore::_get_key(std::string key)
     {
-        auto idx = mymurmurHashString(key);
+        auto idx = HashString(key);
 
         auto q = kvdict[idx].head->next;
         auto preq = kvdict[idx].head;
@@ -246,7 +293,7 @@ namespace zkv{
             return std::string("SET OK");
         } else {
             //找到了
-            if(!checktype(kvstring,q))return std::string("SET FAIL: WRONG TYPE");
+            if(!checktype(kvstring,q))return std::string("SET ERROR: WRONG TYPE");
             *((std::string*)(q->data)) = std::string(data);
             return std::string("SET OK : MOTIF");
         }
@@ -264,7 +311,7 @@ namespace zkv{
 
         if(!q) return std::string("Error: No key named <")+key+">";
         else {
-            if(!checktype(kvstring,q))return std::string("DEL FAIL: WRONG TYPE");
+            if(!checktype(kvstring,q))return std::string("DEL ERROR: WRONG TYPE");
             preq->next = q->next;
 
             q->next = nullptr;
@@ -288,9 +335,9 @@ namespace zkv{
         auto q = pr.second;
         
 
-        if(!q) return std::string("Nil");
+        if(!q) return std::string("ERROR : NO THIS KEY");
         else {
-            if(!checktype(kvstring,q))return std::string("GET FAIL: WRONG TYPE");
+            if(!checktype(kvstring,q))return std::string("GET ERROR: WRONG TYPE");
             return std::string(*((std::string*)(q->data)));
         }
 
@@ -312,9 +359,9 @@ namespace zkv{
         auto q = pr.second;
        
 
-        if(!q) return std::string("Nil");
+        if(!q) return std::string("ERROR : NO THIS KEY");
         else {
-            if(!checktype(kvstring,q))return std::string("INC FAIL: WRONG TYPE");
+            if(!checktype(kvstring,q))return std::string("INC ERROR: WRONG TYPE");
             auto p = _stringtoint(*(std::string*)(q->data));
             if(p.first){
                 int value = p.second;
@@ -333,9 +380,9 @@ namespace zkv{
         auto q = pr.second;
         
 
-        if(!q) return std::string("Nil");
+        if(!q) return std::string("ERROR : NO THIS KEY");
         else {
-            if(!checktype(kvstring,q))return std::string("DEC FAIL: WRONG TYPE");
+            if(!checktype(kvstring,q))return std::string("DEC ERROR: WRONG TYPE");
             auto p = _stringtoint(*(std::string*)(q->data));
             if(p.first){
                 int value = p.second;
@@ -382,7 +429,7 @@ namespace zkv{
             return std::string("RSET OK")+" "+std::to_string(insertnum);
         } else {
             //找到了
-            if(!checktype(kvrset,q))return std::string("FAIL: WRONG TYPE");
+            if(!checktype(kvrset,q))return std::string("ERROR: WRONG TYPE");
             
             auto tree = ((rbtree<ms>*)(q->data));
             int insertnum = 0;
@@ -414,10 +461,10 @@ namespace zkv{
         auto q = pr.second;
 
         if(!q){ 
-        return std::string("Nil");
+        return std::string("ERROR : NO THIS KEY");
         } else {
             //找到了
-            if(!checktype(kvrset,q))return std::string("FAIL: WRONG TYPE");
+            if(!checktype(kvrset,q))return std::string("ERROR: WRONG TYPE");
             
             auto tree = ((rbtree<ms>*)(q->data));
 
@@ -440,7 +487,7 @@ namespace zkv{
         auto preq = pr.first;
         auto q = pr.second;
 
-        if(!q) return std::string("Nil");
+        if(!q) return std::string("ERROR : NO THIS KEY");
         else {
             if(!checktype(kvrset,q))return std::string("FAIL:WRONG TYPE");
             
@@ -454,7 +501,7 @@ namespace zkv{
                 _end = std::stoi(end);
             }
             catch(...){
-                return std::string("RGET ERROR:NOT A NUMBER");
+                return std::string("ERROR:NOT A NUMBER");
             }
 
             if(_begin<0)_begin+=size;
@@ -487,9 +534,9 @@ namespace zkv{
         auto q = pr.second;
        
 
-        if(!q) return std::string("Nil");
+        if(!q) return std::string("ERROR : NO THIS KEY");
         else {
-            if(!checktype(kvrset,q))return std::string("FAIL: WRONG TYPE");
+            if(!checktype(kvrset,q))return std::string("ERROR: WRONG TYPE");
 
             auto tree = ((rbtree<ms>*)(q->data));
 
@@ -513,9 +560,9 @@ namespace zkv{
         auto q = pr.second;
        
 
-        if(!q) return std::string("Nil");
+        if(!q) return std::string("ERROR : NO THIS KEY");
         else {
-            if(!checktype(kvrset,q))return std::string("FAIL: WRONG TYPE");
+            if(!checktype(kvrset,q))return std::string("ERROR: WRONG TYPE");
 
             auto tree = ((rbtree<ms>*)(q->data));
 
@@ -531,4 +578,271 @@ namespace zkv{
         
         return std::string();
     }
+
+    std::string kvstore::rincby(const std::string &key,const std::string &member,const std::string& value)
+    {
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q) return std::string("ERROR : NO THIS KEY");
+        else {
+            if(!checktype(kvrset,q))return std::string("ERROR: WRONG TYPE");
+
+            auto tree = ((rbtree<ms>*)(q->data));
+
+            auto check = tree->checkmember(member);
+            
+            if(!check.first)return std::string("ERROR: MEMBER NOT EXIST");
+
+            tree->Remove(ms(member,check.second));
+            tree->Insert(ms(member,check.second+std::stoi(value)));
+
+            return std::string("RINCBY : ")+std::to_string(check.second+std::stoi(value));
+            }
+        
+        return std::string();
+    }
+
+    std::string kvstore::rdecby(const std::string &key,const std::string &member, const std::string& value)
+    {
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q) return std::string("ERROR : NO THIS KEY");
+        else {
+            if(!checktype(kvrset,q))return std::string("ERROR: WRONG TYPE");
+
+            auto tree = ((rbtree<ms>*)(q->data));
+
+            auto check = tree->checkmember(member);
+            
+            if(!check.first)return std::string("ERROR: MEMBER NOT EXIST");
+
+            tree->Remove(ms(member,check.second));
+            tree->Insert(ms(member,check.second-std::stoi(value)));
+
+            return std::string("RDECBY : ")+std::to_string(check.second-std::stoi(value));
+            }
+        
+        return std::string();
+    }
+
+    std::string kvstore::rscore(const std::string& key,const std::string& member){
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q) return std::string("ERROR : NO THIS KEY");
+        else {
+            if(!checktype(kvrset,q))return std::string("ERROR: WRONG TYPE");
+
+            auto tree = ((rbtree<ms>*)(q->data));
+
+            auto check = tree->checkmember(member);
+            
+            if(!check.first)return std::string("ERROR: MEMBER NOT EXIST");
+
+            return std::to_string(check.second);
+            }
+        
+        return std::string();
+    }
+
+    std::string kvstore::rank(const std::string& key,const std::string& member,int ifback){
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q) return std::string("ERROR : NO THIS KEY");
+        else {
+            if(!checktype(kvrset,q))return std::string("ERROR: WRONG TYPE");
+
+            auto tree = ((rbtree<ms>*)(q->data));
+
+            auto check = tree->checkmember(member);
+            
+            if(!check.first)return std::string("ERROR: MEMBER NOT EXIST");
+            tree->kvInOrder(member);
+            auto rank = tree->getrank();
+
+            if(ifback)rank = tree->size() - rank;
+
+            return std::to_string(rank);
+            }
+        
+        return std::string();
+    }
+
+    std::string kvstore::hset(const std::vector<std::string>& tokens){
+        auto key = tokens[1];
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q){
+            auto bignode = new kvnode;
+            bignode->type = kvhash;
+            preq->next = bignode;
+
+            //建新hash表
+            hash* newhash = new hash;
+            if(!newhash) throw std::runtime_error("ERROR NEW HASH");
+            bignode->data = (void*)newhash;
+            bignode->key = key;
+
+
+            int dealnum = 0;
+            for(int i=2;i<tokens.size();i+=2){
+                auto field = tokens[i];
+                auto value = tokens[i+1];
+
+                auto location = newhash->_get_key(field);
+                auto preloc = location.first;
+                auto qloc = location.second;
+
+                if(!qloc){
+                    hash::hashnode* node = new hash::hashnode;
+                    if(!node) throw std::runtime_error("ERROR NEW HASHNODE");
+
+                    node->field = field;
+                    node->value = value;
+                    node->next = nullptr;
+                    preloc->next = node;
+                } else {
+                    qloc->value = value;
+                }
+                
+                dealnum++;
+            }
+            return std::string("HSET OK : ")+std::to_string(dealnum);
+        }
+        else {
+            if(!checktype(kvhash,q))return std::string("ERROR: WRONG TYPE");
+            int dealnum = 0;
+            for(int i=2;i<tokens.size();i+=2){
+                auto field = tokens[i];
+                auto value = tokens[i+1];
+
+                auto newhash = (hash*)(q->data);
+
+                auto location = newhash->_get_key(field);
+                auto preloc = location.first;
+                auto qloc = location.second;
+
+                if(!qloc){
+                    hash::hashnode* node = new hash::hashnode;
+                    if(!node) throw std::runtime_error("ERROR NEW HASHNODE");
+
+                    node->field = field;
+                    node->value = value;
+                    node->next = nullptr;
+                    preloc->next = node;
+                } else {
+                    qloc->value = value;
+                }
+                
+                dealnum++;
+            }
+            return std::string("HSET OK : ")+std::to_string(dealnum);
+            
+        }
+        return std::string();
+    }
+
+    std::string kvstore::hget(const std::vector<std::string>& tokens){
+        auto key = tokens[1];
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q)return std::string("ERROR : NO THIS KEY");
+
+        if(!checktype(kvhash,q))return std::string("ERROR: WRONG TYPE");
+
+        auto ha = (hash*)(q->data);
+        
+        std::string res;
+        
+        for(int i=2;i<tokens.size();i++){
+            res =  res + "("+std::to_string(i+1)+") ";
+            auto field = tokens[i];
+            auto loc = ha->_get_key(field);
+            auto locq = loc.second;
+
+            if(!locq)res+=std::string("ERROR: NO THIS FIELD");
+            else res+=locq->value;
+
+            res+='\n';
+        }
+
+        return res;
+    }
+
+    std::string kvstore::hdel(const std::string& key,const std::string& field){
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q)return std::string("ERROR : NO THIS KEY");
+
+        if(!checktype(kvhash,q))return std::string("ERROR: WRONG TYPE");
+
+        auto ha = (hash*)(q->data);
+        
+        auto loc = ha->_get_key(field);
+        auto preloc = loc.first;
+        auto locq = loc.second;
+
+        if(!locq)return std::string("ERROR: NO THIS FIELD");
+        else {
+            preloc->next = locq->next;
+            delete locq;
+            return std::string("HDEL OK");
+        }
+
+        return std::string();
+    }
+
+    std::string kvstore::hgetall(const std::string& key){
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q)return std::string("ERROR : NO THIS KEY");
+
+        if(!checktype(kvhash,q))return std::string("ERROR: WRONG TYPE");
+
+        auto ha = (hash*)(q->data);
+        
+        std::string res;
+        
+        for(int i=0,j=0;i < ha->size;i++){
+            
+
+            auto t = ha->dict[i].next;
+
+            while(t){    
+                res =  res + "("+std::to_string(++j)+") ";
+                auto field = t->field;
+                auto value = t->value;
+
+                res = res + " "+field+" "+value;
+                t = t->next;
+                res+='\n';
+            }
+        }
+
+        return res;
+    }
+
 }
