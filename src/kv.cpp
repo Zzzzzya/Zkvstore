@@ -80,6 +80,18 @@ namespace zkv{
                 : std::string("ERROR: CMD NUM ERROR!");
                 break;
 
+            case 8: //"RDEC KEY MEMBER"
+                res = (num == 3)?
+                rinc(toks[1],toks[2])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 9: //"RDEC KEY MEMBER"
+                res = (num == 3)?
+                rdec(toks[1],toks[2])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
 
             default:
                 res = "OK";
@@ -370,7 +382,7 @@ namespace zkv{
             return std::string("RSET OK")+" "+std::to_string(insertnum);
         } else {
             //找到了
-            if(!checktype(kvrset,q))return std::string("RSET FAIL: WRONG TYPE");
+            if(!checktype(kvrset,q))return std::string("FAIL: WRONG TYPE");
             
             auto tree = ((rbtree<ms>*)(q->data));
             int insertnum = 0;
@@ -405,7 +417,7 @@ namespace zkv{
         return std::string("Nil");
         } else {
             //找到了
-            if(!checktype(kvrset,q))return std::string("RSET FAIL: WRONG TYPE");
+            if(!checktype(kvrset,q))return std::string("FAIL: WRONG TYPE");
             
             auto tree = ((rbtree<ms>*)(q->data));
 
@@ -430,7 +442,7 @@ namespace zkv{
 
         if(!q) return std::string("Nil");
         else {
-            if(!checktype(kvrset,q))return std::string("GET FAIL: WRONG TYPE");
+            if(!checktype(kvrset,q))return std::string("FAIL:WRONG TYPE");
             
             auto tree = ((rbtree<ms>*)(q->data));
             int size = tree->size();
@@ -468,13 +480,55 @@ namespace zkv{
         return std::string();
     }
 
-    std::string kvstore::rinc(const std::string &key)
+    std::string kvstore::rinc(const std::string &key,const std::string &member)
     {
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q) return std::string("Nil");
+        else {
+            if(!checktype(kvrset,q))return std::string("FAIL: WRONG TYPE");
+
+            auto tree = ((rbtree<ms>*)(q->data));
+
+            auto check = tree->checkmember(member);
+            
+            if(!check.first)return std::string("ERROR: MEMBER NOT EXIST");
+
+            tree->Remove(ms(member,check.second));
+            tree->Insert(ms(member,check.second+1));
+
+            return std::string("RINC : ")+std::to_string(check.second+1);
+            }
+        
         return std::string();
     }
 
-    std::string kvstore::rdec(const std::string &key)
+    std::string kvstore::rdec(const std::string &key,const std::string &member)
     {
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q) return std::string("Nil");
+        else {
+            if(!checktype(kvrset,q))return std::string("FAIL: WRONG TYPE");
+
+            auto tree = ((rbtree<ms>*)(q->data));
+
+            auto check = tree->checkmember(member);
+            
+            if(!check.first)return std::string("ERROR: MEMBER NOT EXIST");
+
+            tree->Remove(ms(member,check.second));
+            tree->Insert(ms(member,check.second-1));
+
+            return std::string("RDEC : ")+std::to_string(check.second-1);
+            }
+        
         return std::string();
     }
 }

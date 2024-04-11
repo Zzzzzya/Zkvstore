@@ -21,13 +21,13 @@ namespace zkv{
     struct cmdset{
         std::vector<std::string> cmdset = {
             "SET", "GET", "DEL", "INC","DEC",
-            "RSET", "RGET", "RDEL", "RMOD", "RCOUNT",
+            "RSET", "RGET", "RDEL", "RINC", "RDEC",
             "HSET", "HGET", "HDEL", "HMOD", "HCOUNT"
         };
 
         std::vector<std::string> cmdsetlow = {
             "set", "get", "del", "inc","dec",
-            "rset", "rget", "rdel", "rmod", "rcount",
+            "rset", "rget", "rdel", "rinc", "rdec",
             "hset", "hget", "hdel", "hmod", "hcount"
         };
 
@@ -88,8 +88,8 @@ namespace zkv{
         std::string rdel(const std::string& key,const std::string& member);
         std::string rget(const std::string& key,const std::string& begin = "0",
                         const std::string& end = "-1");
-        std::string rinc(const std::string& key);
-        std::string rdec(const std::string& key);
+        std::string rinc(const std::string& key,const std::string& member);
+        std::string rdec(const std::string& key,const std::string& member);
         
         int mymurmurHashString(const std::string& str);
     };    
