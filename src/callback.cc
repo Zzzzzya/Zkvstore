@@ -14,7 +14,8 @@ namespace zkv {
 
             write(ev->fd,result.c_str(),result.length());
 
-            ev->r->motif_event(ev,EPOLLIN);
+            auto mask = ev->out.empty()?EPOLLIN:(EPOLLIN|EPOLLOUT);
+            ev->r->motif_event(ev,mask);
         }
     }
     void read_callback_kv(int fd, int events, void *pri)

@@ -6,6 +6,8 @@ namespace zkv{
 
     std::string kvstore::deal(std::string cmd)
     {
+        debug(),"   deal with cmd: ",cmd;
+
         std::vector<std::string> toks;
         zkv::strtok(cmd, ' ',toks);
         
@@ -19,7 +21,6 @@ namespace zkv{
                 return std::string("ERROR:unknown command!: ")+toks[0];
             
             case 0: //"SET KEY VALUE"
-                debug(),"it is set cmd";
                 res = (num == 3)?
                 set_string(toks[1],toks[2])
                 : std::string("ERROR: CMD NUM ERROR!");
@@ -27,9 +28,38 @@ namespace zkv{
                 break;
 
             case 1: //"GET KEY"
-                debug(),"it is get cmd";
                 res = (num == 2)?
                 get_string(toks[1])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 2: //"DEL KEY"
+                res = (num == 2)?
+                del_string(toks[1])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+
+            case 3: //"INC KEY"
+                res = (num == 2)?
+                inc_string(toks[1])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+            
+            case 4: //"DEC KEY"
+                res = (num == 2)?
+                dec_string(toks[1])
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+            
+            case 5: //"RSET key score member [[score,member],...]"
+                res = (num >= 4 && (num % 2 == 0))?
+                rset(toks)
+                : std::string("ERROR: CMD NUM ERROR!");
+                break;
+            
+            case 6: //"RGET KEY"
+                res = (num == 2)?
+                rget(toks[1])
                 : std::string("ERROR: CMD NUM ERROR!");
                 break;
 
@@ -37,6 +67,8 @@ namespace zkv{
                 res = "OK";
                 break;
         }
+
+        debug(),"       result of cmd: ",res;
 
         return res;
     }
@@ -59,6 +91,10 @@ namespace zkv{
 
         res.push_back(cmd.substr(prepos,cmd.length()));
         return ;
+    }
+
+    static bool checktype(kvtype thetype,kvnode* node){
+        return node->type == thetype;
     }
 
     void kvstore::init_kvstore(int size)
@@ -113,20 +149,33 @@ namespace zkv{
         return sum % kvsize;
     }
 
-    std::string kvstore::set_string(const std::string& key,const std::string& data)
+    std::pair<kvnode *, kvnode *> kvstore::_get_key(std::string key)
     {
         auto idx = mymurmurHashString(key);
 
         auto q = kvdict[idx].head->next;
         auto preq = kvdict[idx].head;
 
-        for(;q;q = q->next){
-            if(preq != q) preq = preq->next;
+        while(q){
             if(q->key == key)break;
+
+            q = q->next;
+            preq = preq->next;
+            
         }
+
+        return {preq,q};
+    }
+
+    std::string kvstore::set_string(const std::string &key, const std::string &data)
+    {
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
 
         if(!q){ //没有 这个时候得新建节点
             auto node = new kvnode;
+            node->type = kvstring;
             node->key = std::string(key);
 
             std::string* str = new std::string(data);
@@ -138,6 +187,7 @@ namespace zkv{
             return std::string("SET OK");
         } else {
             //找到了
+            if(!checktype(kvstring,q))return std::string("SET FAIL: WRONG TYPE");
             *((std::string*)(q->data)) = std::string(data);
             return std::string("SET OK : MOTIF");
         }
@@ -146,24 +196,191 @@ namespace zkv{
         return std::string{};
     }
 
-    int kvstore::del_string(const std::string& key,const std::string& data)
+    std::string kvstore::del_string(const std::string& key)
     {
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q) return std::string("Error: No key named <")+key+">";
+        else {
+            if(!checktype(kvstring,q))return std::string("DEL FAIL: WRONG TYPE");
+            preq->next = q->next;
+
+            q->next = nullptr;
+
+            if(q->data)
+                delete (std::string*)q->data;
+            q->data = nullptr;
+
+            if(q)
+                delete q;
+            q = nullptr;
+            return std::string("DEL OK");
+        }
         return 0;
     }
 
     std::string kvstore::get_string(const std::string &key)
     {
-        auto idx = mymurmurHashString(key);
-
-        auto q = kvdict[idx].head->next;
-
-        for(;q;q = q->next){
-            if(q->key == key)break;
-        }
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+        
 
         if(!q) return std::string("Nil");
-        else return std::string(*((std::string*)(q->data)));
+        else {
+            if(!checktype(kvstring,q))return std::string("GET FAIL: WRONG TYPE");
+            return std::string(*((std::string*)(q->data)));
+        }
 
+        return std::string();
+    }
+
+    static std::pair<bool,int> _stringtoint(const std::string& key){
+        int res = 0;
+        for(auto t:key){
+            if(t < 48 || t > 57 ) return {false,0};
+            res = res*10 + (t-48);
+        }
+        return {true,res};
+    }
+
+    std::string kvstore::inc_string(const std::string& key){
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+       
+
+        if(!q) return std::string("Nil");
+        else {
+            if(!checktype(kvstring,q))return std::string("INC FAIL: WRONG TYPE");
+            auto p = _stringtoint(*(std::string*)(q->data));
+            if(p.first){
+                int value = p.second;
+                value++;
+                *((std::string*)(q->data)) = std::to_string(value);
+                return std::string("INC :")+std::string(*((std::string*)(q->data)));
+            }
+            else {
+                return std::string("ERROR INC : not a number");
+            }
+        }
+    }
+    std::string kvstore::dec_string(const std::string& key){
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+        
+
+        if(!q) return std::string("Nil");
+        else {
+            if(!checktype(kvstring,q))return std::string("DEC FAIL: WRONG TYPE");
+            auto p = _stringtoint(*(std::string*)(q->data));
+            if(p.first){
+                int value = p.second;
+                value--;
+                *((std::string*)(q->data)) = std::to_string(value);
+                return std::string("DEC :")+std::string(*((std::string*)(q->data)));
+            }
+            else {
+                return std::string("ERROR DEC : not a number");
+            }
+        }
+    }
+
+    std::string kvstore::rset(const std::vector<std::string> &tokens)
+    {   
+        auto key = tokens[1];
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+
+        if(!q){ //没有 这个时候得新建红黑树
+            rbtree<ms>* newtree=new rbtree<ms>;
+
+            auto node = new kvnode;
+            node->type = kvrset;
+            node->key = std::string(key);
+
+            node->data = (void*)newtree;
+
+            node->next = nullptr;
+
+            preq->next = node;
+            
+            int insertnum = 0;
+            for(int i=2;i<tokens.size();i+=2){
+
+                auto sco = std::stoi(tokens[i]);
+                auto mem = tokens[i+1];
+
+                ((rbtree<ms>*)(node->data))->Insert(ms(mem,sco));
+                insertnum++;
+                
+            }
+            return std::string("RSET OK")+" "+std::to_string(insertnum);
+        } else {
+            //找到了
+            if(!checktype(kvrset,q))return std::string("RSET FAIL: WRONG TYPE");
+            
+            auto tree = ((rbtree<ms>*)(q->data));
+            int insertnum = 0;
+            for(int i=2;i<tokens.size();i+=2){
+
+                auto sco = std::stoi(tokens[i]);
+                auto mem = tokens[i+1];
+                auto check = tree->checkmember(mem);
+
+                if(!check.first)
+                    tree->Insert(ms(mem,sco));
+                else {
+                    tree->Remove(ms(mem,check.second));
+                    tree->Insert(ms(mem,sco));
+                }
+                insertnum++;
+                
+            }
+            return std::string("RSET OK : ")+std::to_string(insertnum);
+        }
+
+        return std::string();
+    }
+
+    std::string kvstore::rdel(const std::string &key)
+    {
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+
+
+        return std::string();
+    }
+
+    std::string kvstore::rget(const std::string &key)
+    {   
+        auto pr = _get_key(key);
+        auto preq = pr.first;
+        auto q = pr.second;
+
+        if(!q) return std::string("Nil");
+        else {
+            if(!checktype(kvrset,q))return std::string("GET FAIL: WRONG TYPE");
+            auto tree = ((rbtree<ms>*)(q->data));
+            auto ms = tree->min();
+            return std::string(ms.member) +" "+ std::to_string(ms.score);
+        }
+        return std::string();
+    }
+
+    std::string kvstore::rinc(const std::string &key)
+    {
+        return std::string();
+    }
+
+    std::string kvstore::rdec(const std::string &key)
+    {
         return std::string();
     }
 }
