@@ -60,6 +60,7 @@ namespace zkv{
         std::unordered_map<typename Type::member_type,typename Type::score_type> map;
         rbnode<Type>* root;
         rbnode<Type>* Nil;
+        int node_num = 0;
 
     public:
         rbtree();
@@ -97,6 +98,10 @@ namespace zkv{
             }
             return ptr->data;
         }
+        int size(){return node_num;}
+
+        void kvInOrder(std::vector<Type>& res,int begin,int end);
+       
         
         std::pair<bool,typename Type::score_type> checkmember(Type::member_type);
     protected:
@@ -112,6 +117,11 @@ namespace zkv{
         void Remove(rbnode<Type>* z);
         void Remove_Fixup(rbnode<Type>*,rbnode<Type>*,int,int);
         void destroy(rbnode<Type>* root);//销毁红黑树
+        
+        int InOrderNow = 0;
+        void InOrderHelper(rbnode<Type>* root,std::vector<Type>& res,int begin,int end);
+        
+
         
     };
 
@@ -205,6 +215,7 @@ namespace zkv{
 
         //NEW
         map[value.member]=value.score;
+        node_num++;
         
         return true;
     }
@@ -334,6 +345,8 @@ namespace zkv{
         Remove_Fixup(y,py,deletecolor,direction);
 
         map.erase(key.member);
+        node_num--;
+
         return ;
     }
 
@@ -675,6 +688,28 @@ namespace zkv{
         delete root;
         root = nullptr;
         return ;
+    }
+
+    template <typename Type>
+    void rbtree<Type>::kvInOrder(std::vector<Type>& res,int begin,int end){
+        assert(res.empty());
+        InOrderNow = 0;
+        InOrderHelper(root,res,begin,end);
+        InOrderNow = 0;
+        return;
+    }
+
+    template <typename Type>
+    void rbtree<Type>::InOrderHelper(rbnode<Type>* root,std::vector<Type>& res,int begin,int end){
+        if(root->left !=  Nil)InOrderHelper(root->left,res,begin,end);
+        
+        if(InOrderNow>end)return;
+        if(InOrderNow>=begin){
+            res.push_back((root->data));
+        }
+        InOrderNow++;
+
+        if(root->right != Nil)InOrderHelper(root->right,res,begin,end);
     }
 }
 

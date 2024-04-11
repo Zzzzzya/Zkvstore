@@ -57,11 +57,29 @@ namespace zkv{
                 : std::string("ERROR: CMD NUM ERROR!");
                 break;
             
-            case 6: //"RGET KEY"
-                res = (num == 2)?
-                rget(toks[1])
+            case 6: //"RGET KEY begin end"
+                switch(num){
+                    case 4:
+                        res = rget(toks[1],toks[2],toks[3]);
+                        break;
+                    case 3:
+                        res = rget(toks[1],toks[2]);
+                        break;
+                    case 2:
+                        res = rget(toks[1]);
+                        break;
+                    default:
+                        res = std::string("ERROR: CMD NUM ERROR!");
+                        break;
+                }
+                break;
+
+            case 7: //RDEL KEY member
+                res = (num == 3)?
+                rdel(toks[1],toks[2])
                 : std::string("ERROR: CMD NUM ERROR!");
                 break;
+
 
             default:
                 res = "OK";
@@ -127,10 +145,39 @@ namespace zkv{
 
     void kvstore::destroy_kvstore()
     {
+        for(int i=0;i<kvsize;i++){
+            auto t = kvdict[i];
+            auto pre = t.head->next;
+
+            delete t.head;
+            t.head = nullptr;
+
+            while(pre){
+                auto q = pre;
+                pre = pre->next;
+
+                switch(q->type){
+                    case kvstring:
+                        //string 型
+                        delete (std::string*)q->data;
+                        break;
+                    case kvrset:
+                        //rbtree 型
+                        ((rbtree<ms>*)(q->data))->~rbtree();
+                        delete ((rbtree<ms>*)(q->data));
+                        break;
+                    case kvhash:
+                        break;
+                    default:
+                        break;
+                }
+
+                delete q;
+                q = nullptr;
+            }
+        }
         if(kvdict)
             delete[] kvdict;
-
-        //TODO: 完善析构 释放所有空间。 记得打type
 
         kvdict = nullptr;
 
@@ -348,18 +395,35 @@ namespace zkv{
         return std::string();
     }
 
-    std::string kvstore::rdel(const std::string &key)
+    std::string kvstore::rdel(const std::string &key,const std::string& member)
     {
         auto pr = _get_key(key);
         auto preq = pr.first;
         auto q = pr.second;
 
+        if(!q){ 
+        return std::string("Nil");
+        } else {
+            //找到了
+            if(!checktype(kvrset,q))return std::string("RSET FAIL: WRONG TYPE");
+            
+            auto tree = ((rbtree<ms>*)(q->data));
+
+            auto check = tree->checkmember(member);
+            
+            if(!check.first)return std::string("ERROR: MEMBER NOT EXIST");
+            else tree->Remove(ms(member,check.second));
+
+                
+
+            return std::string("RDEL OK ");
+        }
 
         return std::string();
     }
 
-    std::string kvstore::rget(const std::string &key)
-    {   
+    std::string kvstore::rget(const std::string& key,const std::string& begin,const std::string& end){
+
         auto pr = _get_key(key);
         auto preq = pr.first;
         auto q = pr.second;
@@ -367,9 +431,39 @@ namespace zkv{
         if(!q) return std::string("Nil");
         else {
             if(!checktype(kvrset,q))return std::string("GET FAIL: WRONG TYPE");
+            
             auto tree = ((rbtree<ms>*)(q->data));
-            auto ms = tree->min();
-            return std::string(ms.member) +" "+ std::to_string(ms.score);
+            int size = tree->size();
+            int _begin = 0;
+            int _end = 0;
+
+            try {
+                _begin = std::stoi(begin);
+                _end = std::stoi(end);
+            }
+            catch(...){
+                return std::string("RGET ERROR:NOT A NUMBER");
+            }
+
+            if(_begin<0)_begin+=size;
+            if(_end<0)_end+=size;
+
+            std::vector<ms> res;
+
+            if(_end>_begin)tree->kvInOrder(res,_begin,_end);
+            else tree->kvInOrder(res,_end,_begin);
+
+            std::string str = "";
+
+            auto ressize = res.size();
+
+            for(int i=0;i<ressize;i++){
+                auto j=(_end>=_begin)?i:(ressize-i-1);
+                str = str + "("+std::to_string(i+1)+") "+res[j].member+" "+std::to_string(res[j].score);
+                str += '\n';
+            }
+            
+            return str;
         }
         return std::string();
     }

@@ -5,18 +5,19 @@ namespace zkv {
     {
         auto ev = (myevent*)pri;
 
-        char target = '\n';
+        char target = '\r';
+
         size_t pos = ev->out.find(target);
-        if (pos != std::string::npos) {
-            std::string result = ev->out.substr(0, pos);
+        while (pos != std::string::npos) {
+            std::string result = ev->out.substr(0, pos+1);
             //debug(),getLocalIPAddress(ev->fd)," :",result;
             ev->out = ev->out.erase(0,pos+1);
 
             write(ev->fd,result.c_str(),result.length());
-
-            auto mask = ev->out.empty()?EPOLLIN:(EPOLLIN|EPOLLOUT);
-            ev->r->motif_event(ev,mask);
+            pos = ev->out.find(target);
         }
+        
+        ev->r->motif_event(ev,EPOLLIN);
     }
     void read_callback_kv(int fd, int events, void *pri)
     {
@@ -31,7 +32,7 @@ namespace zkv {
             ev->in = ev->in.erase(0,pos+1);
 
 
-            ev->out.append(ev->db->deal(result)+"\n");
+            ev->out.append(ev->db->deal(result)+"\r");
             
             ev->r->motif_event(ev,EPOLLOUT);
         }

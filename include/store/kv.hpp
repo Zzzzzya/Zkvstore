@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include "store/MurmurHash3.hpp"
 #include <exception>
 #include <debug.hpp>
 #include <vector>
@@ -86,8 +85,9 @@ namespace zkv{
         std::string dec_string(const std::string& key);
 
         std::string rset(const std::vector<std::string>& tokens);
-        std::string rdel(const std::string& key);
-        std::string rget(const std::string& key);
+        std::string rdel(const std::string& key,const std::string& member);
+        std::string rget(const std::string& key,const std::string& begin = "0",
+                        const std::string& end = "-1");
         std::string rinc(const std::string& key);
         std::string rdec(const std::string& key);
         
