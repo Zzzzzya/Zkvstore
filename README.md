@@ -14,6 +14,7 @@
 ### STRING类型
 - #### `SET key value `
     设置key及对应value，如果key已存在则覆盖
+
 - #### `GET key`
     获取对应key的value
 - #### `DEL key`
@@ -68,5 +69,7 @@
 - #### `HGETALL key`
     返回所有{field,value}
 
-
+# 协议
+- # 每句命令必须以'\n'结尾
+- # 每个命令数必须相隔一个空格
 
