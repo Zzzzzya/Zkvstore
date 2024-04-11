@@ -80,7 +80,7 @@ namespace zkv{
                 : std::string("ERROR: CMD NUM ERROR!");
                 break;
 
-            case 8: //"RDEC KEY MEMBER"
+            case 8: //"RINC KEY MEMBER"
                 res = (num == 3)?
                 rinc(toks[1],toks[2])
                 : std::string("ERROR: CMD NUM ERROR!");
@@ -772,7 +772,7 @@ namespace zkv{
         std::string res;
         
         for(int i=2;i<tokens.size();i++){
-            res =  res + "("+std::to_string(i+1)+") ";
+            res =  res + "("+std::to_string(i+1)+")";
             auto field = tokens[i];
             auto loc = ha->_get_key(field);
             auto locq = loc.second;
@@ -832,11 +832,11 @@ namespace zkv{
             auto t = ha->dict[i].next;
 
             while(t){    
-                res =  res + "("+std::to_string(++j)+") ";
+                res =  res + "("+std::to_string(++j)+")";
                 auto field = t->field;
                 auto value = t->value;
 
-                res = res + " "+field+" "+value;
+                res = res+field+" "+value;
                 t = t->next;
                 res+='\n';
             }

@@ -34,7 +34,7 @@ namespace zkv{
 
         int find(std::string input){
             auto size = cmdset.size();
-            for(int i=0;i<size-1;i++){
+            for(int i=0;i<size;i++){
                 if(input == cmdset[i] || input == cmdsetlow[i])return i;
             }
             return -1;
