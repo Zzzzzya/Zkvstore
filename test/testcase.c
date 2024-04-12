@@ -239,7 +239,7 @@ int main(int argc, char *argv[]) {
 
 		int time_used = TIME_SUB_MS(tv_end, tv_begin);
 		
-		printf("hash testcase-->  time_used: %d, qps: %d\n", time_used, 200000 * 1000 / time_used);
+		printf("hash testcase-->  time_used: %d, qps: %d\n", time_used, 100000 * 1000 / time_used);
 
 		
 	

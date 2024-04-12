@@ -1,4 +1,4 @@
 string test(10w) : time_used: 236234, qps: 2539
 rbtree testcase(10w)  :  time_used: 51946, qps: 1925
-hash testcase(10w) :  time_used: 67903, qps: 2945
+hash testcase(10w) :  time_used: 67903, qps: 1472
 
