@@ -290,12 +290,12 @@ namespace zkv{
             node->next = nullptr;
 
             preq->next = node;
-            return std::string("SET OK");
+            return std::string("OK");
         } else {
             //找到了
             if(!checktype(kvstring,q))return std::string("SET ERROR: WRONG TYPE");
             *((std::string*)(q->data)) = std::string(data);
-            return std::string("SET OK : MOTIF");
+            return std::string("OK");
         }
 
 
@@ -323,7 +323,7 @@ namespace zkv{
             if(q)
                 delete q;
             q = nullptr;
-            return std::string("DEL OK");
+            return std::string("OK");
         }
         return 0;
     }
@@ -367,7 +367,7 @@ namespace zkv{
                 int value = p.second;
                 value++;
                 *((std::string*)(q->data)) = std::to_string(value);
-                return std::string("INC :")+std::string(*((std::string*)(q->data)));
+                return std::string("OK INC :")+std::string(*((std::string*)(q->data)));
             }
             else {
                 return std::string("ERROR INC : not a number");
@@ -388,7 +388,7 @@ namespace zkv{
                 int value = p.second;
                 value--;
                 *((std::string*)(q->data)) = std::to_string(value);
-                return std::string("DEC :")+std::string(*((std::string*)(q->data)));
+                return std::string("OK DEC :")+std::string(*((std::string*)(q->data)));
             }
             else {
                 return std::string("ERROR DEC : not a number");
@@ -426,7 +426,7 @@ namespace zkv{
                 insertnum++;
                 
             }
-            return std::string("RSET OK")+" "+std::to_string(insertnum);
+            return std::string("OK")+" "+std::to_string(insertnum);
         } else {
             //找到了
             if(!checktype(kvrset,q))return std::string("ERROR: WRONG TYPE");
@@ -448,7 +448,7 @@ namespace zkv{
                 insertnum++;
                 
             }
-            return std::string("RSET OK : ")+std::to_string(insertnum);
+            return std::string("OK : ")+std::to_string(insertnum);
         }
 
         return std::string();
@@ -475,7 +475,7 @@ namespace zkv{
 
                 
 
-            return std::string("RDEL OK ");
+            return std::string("OK");
         }
 
         return std::string();
@@ -688,6 +688,7 @@ namespace zkv{
 
         if(!q){
             auto bignode = new kvnode;
+            memset(bignode,0,sizeof(kvnode));
             bignode->type = kvhash;
             preq->next = bignode;
 
@@ -711,6 +712,7 @@ namespace zkv{
                     hash::hashnode* node = new hash::hashnode;
                     if(!node) throw std::runtime_error("ERROR NEW HASHNODE");
 
+
                     node->field = field;
                     node->value = value;
                     node->next = nullptr;
@@ -721,7 +723,7 @@ namespace zkv{
                 
                 dealnum++;
             }
-            return std::string("HSET OK : ")+std::to_string(dealnum);
+            return std::string("OK ")+std::to_string(dealnum);
         }
         else {
             if(!checktype(kvhash,q))return std::string("ERROR: WRONG TYPE");
@@ -750,7 +752,7 @@ namespace zkv{
                 
                 dealnum++;
             }
-            return std::string("HSET OK : ")+std::to_string(dealnum);
+            return std::string("OK ")+std::to_string(dealnum);
             
         }
         return std::string();
@@ -806,7 +808,7 @@ namespace zkv{
         else {
             preloc->next = locq->next;
             delete locq;
-            return std::string("HDEL OK");
+            return std::string("OK");
         }
 
         return std::string();

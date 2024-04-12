@@ -13,7 +13,7 @@ namespace zkv{
             hashnode* next;
         };
 
-        const int size = 128;
+        const int size = 64;
         hashnode* dict;
         int used;
 
