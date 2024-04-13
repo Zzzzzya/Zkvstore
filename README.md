@@ -6,7 +6,7 @@
 
 ## 构建zkvstore服务器
 ```
-./make 
+./server 
 ```
 端口默认为8888
 
